@@ -1,8 +1,8 @@
-import express from 'express';
-import { estadosController } from '../controllers/estados.js';
+import { Router } from "express";
+import { estadosController } from "../controllers/estados.js";
 
-const app = express();
+const router = Router();
 
-app.get('/', estadosController.getAll);
+router.get("/", estadosController.getAll);
 
-export { app as estados};
+export { router as estados };
