@@ -5,7 +5,7 @@ import { plantasController } from "../controllers/plantas.js";
 const router = Router();
 
 router.get("/", plantasController.getAll);
-router.get("/:id", plantasController.getById);
 router.post("/", upload.single("imagen"), plantasController.createNew);
-
+router.get("/populares", plantasController.getMostViewed);
+router.get("/:id", plantasController.getById);
 export { router as plantas };

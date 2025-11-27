@@ -13,7 +13,9 @@ app.use(express.json()); // Middleware para parsear JSON
 app.use(express.urlencoded({ extended: true })); // Middleware para parsear datos URL-encoded
 routes(app); // Configurar rutas
 
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
     // Iniciar el servidor
     console.log(`Server en puerto ${port}`);
 });
+
+//  192.168.3.57

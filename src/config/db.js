@@ -96,6 +96,8 @@ const createTables = async () => {
         await conn.execute(planta_estadoTable);
         await conn.execute(formas_preparacionTable);
         await conn.execute(plata_preparacionTable);
+        await conn.execute(createIndex);
+        await conn.execute(createIndex2);
 
         console.log("Tablas creadas o ya existen.");
     } catch (error) {

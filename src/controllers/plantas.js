@@ -120,23 +120,86 @@ export const plantasController = {
     },
     createNew: async (req, res) => {
         // Lógica para crear una nueva planta medicinal
-        console.log(req.body);
-        console.log(req.file);
-
         const {
             nombre_cientifico,
             nombre_comun,
             descripcion,
             efectos_secundarios,
+            imagen,
             usos,
             tipo,
             distribucion,
             preparaciones,
         } = req.body;
-        const imagen = req.file ? req.file.filename : null;
-        // parser tipo, distribucion, preparaciones from JSON string to array
+        // parsear tipo, distribucion, preparaciones from JSON string to array
         const tiposArray = JSON.parse(tipo);
         const distribucionArray = JSON.parse(distribucion);
         const preparacionesArray = JSON.parse(preparaciones);
+        console.log({
+            nombre_cientifico,
+            nombre_comun,
+            descripcion,
+            efectos_secundarios,
+            imagen,
+            usos,
+            tiposArray,
+            distribucionArray,
+            preparacionesArray,
+        });
+
+        try {
+            const sqlInsertPlanta = `
+                INSERT INTO plantas 
+                (nombre_cientifico, nombre_comun, descripcion, efectos_secundarios, imagen, usos)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `;
+            const [result] = await conn.execute(sqlInsertPlanta, [
+                nombre_cientifico,
+                nombre_comun,
+                descripcion,
+                efectos_secundarios,
+                imagen,
+                usos,
+            ]);
+            const plantaId = result.insertId;
+            for (let tipoId of tiposArray) {
+                const sqlInsertTipo = `
+                    INSERT INTO planta_tipo (id_planta, id_tipo) VALUES (?, ?)
+                `;
+            }
+            for (let estadoId of distribucionArray) {
+                const sqlInsertEstado = `
+                    INSERT INTO planta_estado (id_planta, id_estado) VALUES (?, ?)
+                `;
+            }
+            for (let preparacion of preparacionesArray) {
+                const sqlInsertPreparacion = `
+                    INSERT INTO planta_preparacion (id_planta, id_preparacion, parte_usada, detalles) VALUES (?, ?, ?, ?)
+                `;
+            }
+        } catch (error) {
+            console.error("Error al crear la planta medicinal:", error);
+            return res.status(500).json({
+                status: false,
+                message: "Error al crear la planta medicinal",
+            });
+        }
+    },
+    getMostViewed: async (req, res) => {
+        const sqlPlantas = "SELECT * FROM plantas ORDER BY vistas DESC LIMIT 4";
+        try {
+            const [plantas] = await conn.execute(sqlPlantas);
+            res.json({
+                status: true,
+                message: "Plantas medicinales más vistas",
+                data: plantas,
+            });
+        } catch (error) {
+            console.error("Error al obtener las plantas más vistas:", error);
+            return res.status(500).json({
+                status: false,
+                message: "Error al obtener las plantas más vistas",
+            });
+        }
     },
 };
