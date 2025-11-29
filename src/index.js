@@ -9,8 +9,9 @@ const port = process.env.PORT || 3000; // Puerto definido en .env o 3000 por def
 const app = express(); // Crear instancia de Express
 
 app.use(cors()); // Habilitar CORS
-app.use(express.json()); // Middleware para parsear JSON
-app.use(express.urlencoded({ extended: true })); // Middleware para parsear datos URL-encoded
+app.use(express.json({ limit: "16mb" })); // Middleware para parsear JSON
+app.use(express.urlencoded({ extended: true, limit: "16mb" })); // Middleware para parsear datos URL-encoded
+
 routes(app); // Configurar rutas
 
 app.listen(port, "0.0.0.0", () => {

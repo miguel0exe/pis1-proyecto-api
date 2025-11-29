@@ -8,6 +8,9 @@ pnpm-lock.yaml
 yarn-debug.log*
 yarn-error.log*
 lerc
+package-lock.json
+pnpm-debug.log*
+pnpm-lock.yaml
 # Runtime data
 pids
 *.pid
@@ -42,4 +45,5 @@ typings/
 .rpt2_cache/
 .rts2_cache_cjs/
 .rts2_cache_es/
+
 

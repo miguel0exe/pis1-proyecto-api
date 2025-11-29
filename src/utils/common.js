@@ -1,12 +1,6 @@
-export const getInformacionCompleta = async (planta, conn) => {
-    const sqlTipos = `
-        SELECT t.id, t.nombre
-        FROM planta_tipo pt
-        JOIN tipo t ON t.id = pt.id_tipo
-        WHERE pt.id_planta = ?;
-    `;
+export const getInformacionAdicional = async (sqlQuery, conn) => {
+    const planta = getInformacionListado(conn, sqlQuery);
 
-    const [tipos] = await conn.execute(sqlTipos, [planta.id]);
     const sqlEstados = `
         SELECT e.id, e.nombre
         FROM planta_estado pe
@@ -24,8 +18,31 @@ export const getInformacionCompleta = async (planta, conn) => {
 
     return {
         ...planta,
-        tipo: tipos,
         distribucion: estados,
         preparaciones: preparaciones,
     };
+};
+
+export const getInformacionListado = async (conn, sqlQuery) => {
+    const [plantas] = await conn.execute(sqlQuery);
+    const data = [];
+    for (let pl of plantas) {
+        const imagenUrl = pl.imagen ? `/plantas/${pl.id}/imagen` : null;
+        const sqlTipos = `
+                    SELECT t.id, t.nombre
+                    FROM planta_tipo pt
+                    JOIN tipo t ON t.id = pt.id_tipo
+                    WHERE pt.id_planta = ?;
+                `;
+
+        const [tipos] = await conn.execute(sqlTipos, [pl.id]);
+
+        const planta = {
+            ...pl,
+            imagen: imagenUrl,
+            tipo: tipos,
+        };
+        data.push(planta);
+    }
+    return data;
 };

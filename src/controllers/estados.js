@@ -1,5 +1,5 @@
 import conn from "../config/db.js";
-import { parseRespError, parseRespOk } from "../config/parser.js";
+import { parseRespError, parseRespOk } from "../config/utils.js";
 
 export const estadosController = {
     getAll: async (req, res) => {
