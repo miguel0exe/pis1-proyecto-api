@@ -5,7 +5,6 @@ import { routes } from "./routes/index.js";
 
 dotevn.config(); // Cargar variables de entorno
 
-const port = process.env.PORT || 3000; // Puerto definido en .env o 3000 por defecto
 const app = express(); // Crear instancia de Express
 
 app.use(cors()); // Habilitar CORS
@@ -14,9 +13,6 @@ app.use(express.urlencoded({ extended: true, limit: "16mb" })); // Middleware pa
 
 routes(app); // Configurar rutas
 
-app.listen(port, "0.0.0.0", () => {
-    // Iniciar el servidor
-    console.log(`Server en puerto ${port}`);
-});
+export default app;
 
 //  192.168.3.57
