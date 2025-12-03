@@ -1,57 +1,21 @@
 import conn from "../config/db.js";
 import {
+    getInformacionAdicional,
+    getInformacionListado,
+} from "../utils/common.js";
+import {
     detectarMimeType,
     parseRespError,
     parseRespOk,
-} from "../config/utils.js";
-import { getInformacionListado } from "../utils/common.js";
+} from "../utils/index.js";
 
 export const plantasController = {
     getAll: async (req, res) => {
         const sqlPlantas =
-            "SELECT id, nombre_comun, nombre_cientifico, imagen FROM plantas";
+            "SELECT id, nombre_comun, nombre_cientifico, vistas, imagen FROM plantas";
         let data = [];
         try {
-            const [plantas] = await conn.execute(sqlPlantas);
-
-            for (let pl of plantas) {
-                const imagenUrl = pl.imagen ? `/plantas/${pl.id}/imagen` : null;
-                const sqlTipos = `
-                    SELECT t.id, t.nombre
-                    FROM planta_tipo pt
-                    JOIN tipo t ON t.id = pt.id_tipo
-                    WHERE pt.id_planta = ?;
-                `;
-
-                const [tipos] = await conn.execute(sqlTipos, [pl.id]);
-
-                const sqlEstados = `
-                    SELECT e.id, e.nombre
-                    FROM planta_estado pe
-                    JOIN estados e ON e.id = pe.id_estado
-                    WHERE pe.id_planta = ?;
-                `;
-
-                const [estados] = await conn.execute(sqlEstados, [pl.id]);
-
-                const sqlPreparaciones = `
-                    SELECT fp.id, fp.nombre, fp.descripcion, pp.parte_usada, pp.detalles
-                    FROM planta_preparacion pp
-                    JOIN formas_preparacion fp ON fp.id = pp.id_preparacion
-                    WHERE pp.id_planta = ?;
-                `;
-                const [preparaciones] = await conn.execute(sqlPreparaciones, [
-                    pl.id,
-                ]);
-
-                const planta = {
-                    ...pl,
-                    imagen: imagenUrl,
-                    tipo: tipos,
-                    distribucion: estados,
-                };
-                data.push(planta);
-            }
+            data = await getInformacionListado(conn, sqlPlantas);
         } catch (error) {
             console.error("Error al obtener las plantas:", error);
             return res
@@ -69,52 +33,18 @@ export const plantasController = {
         const { id } = req.params;
         const sqlPlanta = "SELECT * FROM plantas WHERE id = ?";
         try {
-            const [plantas] = await conn.execute(sqlPlanta, [id]);
-            if (plantas.length === 0) {
+            const data = await getInformacionAdicional(sqlPlanta, conn, [id]);
+
+            if (!data) {
                 return res.status(404).json({
                     status: false,
                     message: "Planta medicinal no encontrada",
                 });
             }
 
-            const planta = plantas[0];
-            const imagenUrl = planta.imagen
-                ? `/plantas/${planta.id}/imagen`
-                : null;
             const sqlUpdateViews = `UPDATE plantas SET vistas = vistas + 1 WHERE id = ?`;
             await conn.execute(sqlUpdateViews, [id]);
 
-            const sqlTipos = `
-                SELECT t.id, t.nombre
-                FROM planta_tipo pt
-                JOIN tipo t ON t.id = pt.id_tipo
-                WHERE pt.id_planta = ?;
-            `;
-
-            const [tipos] = await conn.execute(sqlTipos, [planta.id]);
-            const sqlEstados = `
-                SELECT e.id, e.nombre
-                FROM planta_estado pe
-                JOIN estados e ON e.id = pe.id_estado
-                WHERE pe.id_planta = ?;
-            `;
-            const [estados] = await conn.execute(sqlEstados, [planta.id]);
-            const sqlPreparaciones = `
-                SELECT fp.id, fp.nombre, fp.descripcion, pp.parte_usada, pp.detalles
-                FROM planta_preparacion pp
-                JOIN formas_preparacion fp ON fp.id = pp.id_preparacion
-                WHERE pp.id_planta = ?;
-            `;
-            const [preparaciones] = await conn.execute(sqlPreparaciones, [
-                planta.id,
-            ]);
-            const data = {
-                ...planta,
-                imagen: imagenUrl,
-                tipo: tipos,
-                distribucion: estados,
-                preparaciones: preparaciones,
-            };
             res.json(
                 parseRespOk(data, "Planta medicinal obtenida correctamente")
             );
@@ -137,11 +67,8 @@ export const plantasController = {
             tipo,
             distribucion,
             preparaciones,
-        } = req?.body;
-        // parsear tipo, distribucion, preparaciones from JSON string to array
-        const tiposArray = JSON.parse(tipo);
-        const distribucionArray = JSON.parse(distribucion);
-        const preparacionesArray = JSON.parse(preparaciones);
+        } = req.body ?? {};
+
         console.log({
             nombre_cientifico,
             nombre_comun,
@@ -149,16 +76,41 @@ export const plantasController = {
             efectos_secundarios,
             imagen,
             usos,
-            tiposArray,
-            distribucionArray,
-            preparacionesArray,
+            tipo,
+            distribucion,
+            preparaciones,
         });
+
+        if (
+            nombre_cientifico == null ||
+            nombre_comun == null ||
+            descripcion == null ||
+            usos == null ||
+            imagen == null ||
+            efectos_secundarios == null ||
+            tipo == null ||
+            distribucion == null ||
+            preparaciones == null
+        ) {
+            return res
+                .status(400)
+                .json(
+                    parseRespError(
+                        "Faltan campos obligatorios para crear la planta medicinal"
+                    )
+                );
+        }
+
+        // parsear tipo, distribucion, preparaciones from JSON string to array
+        const tiposArray = JSON.parse(tipo);
+        const distribucionArray = JSON.parse(distribucion);
+        const preparacionesArray = JSON.parse(preparaciones);
 
         try {
             const sqlInsertPlanta = `
-                INSERT INTO plantas 
-                (nombre_cientifico, nombre_comun, descripcion, efectos_secundarios, imagen, usos)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO plantas
+                (nombre_cientifico, nombre_comun, descripcion, efectos_secundarios, imagen, usos, vistas)
+                VALUES (?, ?, ?, ?, ?, ?, 0)
             `;
             const [result] = await conn.execute(sqlInsertPlanta, [
                 nombre_cientifico,
@@ -174,18 +126,33 @@ export const plantasController = {
                     const sqlInsertTipo = `
                         INSERT INTO planta_tipo (id_planta, id_tipo) VALUES (?, ?)
                     `;
+                    await conn.execute(sqlInsertTipo, [plantaId, tipoId]);
                 }
                 for (let estadoId of distribucionArray) {
                     const sqlInsertEstado = `
                         INSERT INTO planta_estado (id_planta, id_estado) VALUES (?, ?)
                     `;
+                    await conn.execute(sqlInsertEstado, [plantaId, estadoId]);
                 }
                 for (let preparacion of preparacionesArray) {
                     const sqlInsertPreparacion = `
                         INSERT INTO planta_preparacion (id_planta, id_preparacion, parte_usada, detalles) VALUES (?, ?, ?, ?)
                     `;
+                    await conn.execute(sqlInsertPreparacion, [
+                        plantaId,
+                        preparacion.id_preparacion,
+                        preparacion.parte_usada,
+                        preparacion.detalles,
+                    ]);
                 }
             }
+
+            res.status(201).json(
+                parseRespOk(
+                    { id: plantaId },
+                    "Planta medicinal creada correctamente"
+                )
+            );
         } catch (error) {
             console.error("Error al crear la planta medicinal:", error);
             return res
@@ -196,7 +163,7 @@ export const plantasController = {
     getMostViewed: async (req, res) => {
         try {
             const sqlPlantas =
-                "SELECT id, nombre_comun, nombre_cientifico, imagen FROM plantas ORDER BY vistas DESC LIMIT 4";
+                "SELECT id, nombre_comun, nombre_cientifico, vistas, imagen FROM plantas ORDER BY vistas DESC LIMIT 4";
             const data = await getInformacionListado(conn, sqlPlantas);
             res.json(
                 parseRespOk(data, "Plantas más vistas obtenidas correctamente")

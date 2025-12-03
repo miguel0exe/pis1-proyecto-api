@@ -4,14 +4,15 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "dev": "node --watch src/index.js"
+        "dev": "node --watch src/index.js",
+        "start": "node src/index.js",
+        "vercel-build": "echo 'No build step needed'"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "type": "module",
     "dependencies": {
-        "body-parser": "^2.2.0",
         "cors": "^2.8.5",
         "express": "^5.1.0",
         "multer": "^2.0.2",

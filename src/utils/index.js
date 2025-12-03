@@ -57,3 +57,10 @@ export const parseRespError = (message) => {
         message: message,
     };
 };
+
+export const isEmpty = (value) => {
+    if (value == null) return true; // null o undefined
+    if (typeof value === "string" && value.trim() === "") return true;
+    if (Array.isArray(value) && value.length === 0) return true;
+    return false;
+};

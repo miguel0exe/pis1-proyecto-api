@@ -7,6 +7,7 @@ const conn = await mysql.createConnection({
     user: process.env.DB_USER, // Usuario de la base de datos
     password: process.env.DB_PASSWORD, // Contraseña del usuario
     database: process.env.DB_NAME, // Nombre de la base de datos
+    port: process.env.DB_PORT || 3306, // Puerto de la base de datos, por defecto 3306
 });
 
 const createTables = async () => {

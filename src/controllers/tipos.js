@@ -1,5 +1,5 @@
 import conn from "../config/db.js";
-import { parseRespError, parseRespOk } from "../config/utils.js";
+import { parseRespError, parseRespOk } from "../utils/index.js";
 
 export const tiposController = {
     getAll: async (req, res) => {
