@@ -1,3 +1,4 @@
+import { buscador } from "./buscador.js";
 import { estados } from "./estados.js";
 import { plantas } from "./plantas.js";
 import { preparaciones } from "./preparaciones.js";
@@ -10,4 +11,5 @@ export const routes = (app) => {
     app.use(`/${api}/plantas`, plantas);
     app.use(`/${api}/tipos`, tipos);
     app.use(`/${api}/preparaciones`, preparaciones);
+    app.use(`/${api}/buscador`, buscador);
 };

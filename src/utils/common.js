@@ -36,11 +36,11 @@ export const getInformacionListado = async (conn, sqlQuery, params = []) => {
         const [tipos] = await conn.execute(sqlTipos, [pl.id]);
 
         const sqlEstados = `
-        SELECT e.id, e.nombre
-        FROM planta_estado pe
-        JOIN estados e ON e.id = pe.id_estado
-        WHERE pe.id_planta = ?;
-    `;
+            SELECT e.id, e.nombre
+            FROM planta_estado pe
+            JOIN estados e ON e.id = pe.id_estado
+            WHERE pe.id_planta = ?;
+        `;
         const [estados] = await conn.execute(sqlEstados, [pl.id]);
 
         const planta = {
