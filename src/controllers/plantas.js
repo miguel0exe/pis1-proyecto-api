@@ -2,6 +2,7 @@ import conn from "../config/db.js";
 import {
     getInformacionAdicional,
     getInformacionListado,
+    insertRelacionesBatch,
 } from "../utils/common.js";
 import {
     detectarMimeType,
@@ -122,29 +123,13 @@ export const plantasController = {
             ]);
             const plantaId = result.insertId;
             if (plantaId) {
-                for (let tipoId of tiposArray) {
-                    const sqlInsertTipo = `
-                        INSERT INTO planta_tipo (id_planta, id_tipo) VALUES (?, ?)
-                    `;
-                    await conn.execute(sqlInsertTipo, [plantaId, tipoId]);
-                }
-                for (let estadoId of distribucionArray) {
-                    const sqlInsertEstado = `
-                        INSERT INTO planta_estado (id_planta, id_estado) VALUES (?, ?)
-                    `;
-                    await conn.execute(sqlInsertEstado, [plantaId, estadoId]);
-                }
-                for (let preparacion of preparacionesArray) {
-                    const sqlInsertPreparacion = `
-                        INSERT INTO planta_preparacion (id_planta, id_preparacion, parte_usada, detalles) VALUES (?, ?, ?, ?)
-                    `;
-                    await conn.execute(sqlInsertPreparacion, [
-                        plantaId,
-                        preparacion.id_preparacion,
-                        preparacion.parte_usada,
-                        preparacion.detalles,
-                    ]);
-                }
+                await insertRelacionesBatch(
+                    conn,
+                    plantaId,
+                    tiposArray,
+                    distribucionArray,
+                    preparacionesArray
+                );
             }
 
             res.status(201).json(
