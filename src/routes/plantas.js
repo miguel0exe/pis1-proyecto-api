@@ -26,8 +26,6 @@ router.put("/:id/imagenes", (req, res) => {
         status: true,
         message: "Imagen actualizada correctamente",
     });
-
-    console.log(buffer);
 });
 
 router.get("/", plantasController.getAll);
