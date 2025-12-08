@@ -166,4 +166,11 @@ export const insertRelacionesBatch = async (
     }
 };
 
-// ... (El resto de las funciones en utils/common.js se mantienen optimizadas como te las pasé antes)
+export const convertBase64ToBuffer = (base64String) => {
+    let base64Data = base64String;
+    // Si viene con el prefijo "data:image/jpeg;base64,..."
+    if (base64Data.startsWith("data:")) {
+        base64Data = base64Data.split(",")[1];
+    }
+    return Buffer.from(base64Data, "base64");
+};

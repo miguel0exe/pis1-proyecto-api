@@ -1,5 +1,6 @@
 import conn from "../config/db.js";
 import {
+    convertBase64ToBuffer,
     getInformacionAdicional,
     getInformacionListado,
     insertRelacionesBatch,
@@ -65,7 +66,7 @@ export const plantasController = {
             efectos_secundarios,
             imagen,
             usos,
-            tipo,
+            tipos,
             distribucion,
             preparaciones,
         } = req.body ?? {};
@@ -77,7 +78,7 @@ export const plantasController = {
             efectos_secundarios,
             imagen,
             usos,
-            tipo,
+            tipos,
             distribucion,
             preparaciones,
         });
@@ -89,7 +90,7 @@ export const plantasController = {
             usos == null ||
             imagen == null ||
             efectos_secundarios == null ||
-            tipo == null ||
+            tipos == null ||
             distribucion == null ||
             preparaciones == null
         ) {
@@ -103,9 +104,9 @@ export const plantasController = {
         }
 
         // parsear tipo, distribucion, preparaciones from JSON string to array
-        const tiposArray = JSON.parse(tipo);
-        const distribucionArray = JSON.parse(distribucion);
-        const preparacionesArray = JSON.parse(preparaciones);
+        // const tiposArray = JSON.parse(tipos);
+        // const distribucionArray = JSON.parse(distribucion);
+        // const preparacionesArray = JSON.parse(preparaciones);
 
         try {
             const sqlInsertPlanta = `
@@ -113,12 +114,13 @@ export const plantasController = {
                 (nombre_cientifico, nombre_comun, descripcion, efectos_secundarios, imagen, usos, vistas)
                 VALUES (?, ?, ?, ?, ?, ?, 0)
             `;
+            const buffer = convertBase64ToBuffer(imagen);
             const [result] = await conn.execute(sqlInsertPlanta, [
                 nombre_cientifico,
                 nombre_comun,
                 descripcion,
                 efectos_secundarios,
-                imagen,
+                buffer,
                 usos,
             ]);
             const plantaId = result.insertId;
@@ -126,9 +128,9 @@ export const plantasController = {
                 await insertRelacionesBatch(
                     conn,
                     plantaId,
-                    tiposArray,
-                    distribucionArray,
-                    preparacionesArray
+                    tipos,
+                    distribucion,
+                    preparaciones
                 );
             }
 
@@ -184,6 +186,27 @@ export const plantasController = {
                 .json(
                     parseRespError("Error al obtener la imagen de la planta")
                 );
+        }
+    },
+    deleteById: async (req, res) => {
+        const { id } = req.params;
+        const sqlDelete = "DELETE FROM plantas WHERE id = ?";
+        try {
+            const [result] = await conn.execute(sqlDelete, [id]);
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    status: false,
+                    message: "Planta medicinal no encontrada",
+                });
+            }
+            res.json(
+                parseRespOk(null, "Planta medicinal eliminada correctamente")
+            );
+        } catch (error) {
+            console.error("Error al eliminar la planta medicinal:", error);
+            return res
+                .status(500)
+                .json(parseRespError("Error al eliminar la planta medicinal"));
         }
     },
 };

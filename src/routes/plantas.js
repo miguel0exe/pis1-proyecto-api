@@ -11,17 +11,15 @@ router.put("/:id/imagenes", (req, res) => {
     const file = req?.files;
     let base64Data = req.body?.imagen;
     // Si viene con el prefijo "data:image/jpeg;base64,..."
-    if (base64Data.startsWith("data:")) {
-        base64Data = base64Data.split(",")[1];
-    }
-    const buffer = Buffer.from(base64Data, "base64");
+    const buffer = convertBase64ToBuffer(base64Data);
 
     const sql = `
         UPDATE plantas
         SET imagen = ?
         WHERE id = ?;
     `;
-    conn.execute(sql, [buffer, id]);
+    // cast id a number
+    conn.execute(sql, [buffer, Number(id)]);
     res.json({
         status: true,
         message: "Imagen actualizada correctamente",
@@ -33,5 +31,6 @@ router.post("/", plantasController.createNew);
 router.get("/populares", plantasController.getMostViewed);
 router.get("/:id/imagen", plantasController.getImageById);
 router.get("/:id", plantasController.getById);
+router.delete("/:id", plantasController.deleteById);
 
 export { router as plantas };
