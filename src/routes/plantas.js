@@ -1,6 +1,7 @@
 import { Router } from "express"; // Importa el enrutador de Express
 import conn from "../config/db.js"; // Importa la conexión a la base de datos
 import { plantasController } from "../controllers/plantas.js"; // Importa el controlador de plantas
+import { convertBase64ToBuffer } from "../utils/common.js";
 
 const router = Router(); // Crea un enrutador de Express
 
