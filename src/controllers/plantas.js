@@ -14,19 +14,18 @@ import {
 export const plantasController = {
     getAll: async (req, res) => {
         const sqlPlantas =
-            "SELECT id, nombre_comun, nombre_cientifico, vistas, imagen FROM plantas";
-        let data = [];
+            "SELECT id, nombre_comun, nombre_cientifico, vistas, imagen FROM plantas"; // Consulta las plantas guardadas en la base de datos
+        let data = []; // Inicializa un arreglo para almacenar los datos de las plantas
         try {
-            data = await getInformacionListado(conn, sqlPlantas);
+            data = await getInformacionListado(conn, sqlPlantas); // Obtiene la información de plantas usando la función auxiliar
         } catch (error) {
-            console.error("Error al obtener las plantas:", error);
             return res
                 .status(500)
-                .json(parseRespError("Error al obtener las plantas"));
+                .json(parseRespError("Error al obtener las plantas")); // Maneja errores y responde con un mensaje de error
         }
 
         res.json(
-            parseRespOk(data, "Plantas medicinales obtenidas correctamente")
+            parseRespOk(data, "Plantas medicinales obtenidas correctamente") // Responde con los datos obtenidos y un mensaje de éxito
         );
     },
     getById: async (req, res) => {
@@ -69,20 +68,9 @@ export const plantasController = {
             tipos,
             distribucion,
             preparaciones,
-        } = req.body ?? {};
-
-        console.log({
-            nombre_cientifico,
-            nombre_comun,
-            descripcion,
-            efectos_secundarios,
-            imagen,
-            usos,
-            tipos,
-            distribucion,
-            preparaciones,
-        });
-
+            password,
+        } = req.body ?? {}; // Extrae los datos del cuerpo de la solicitud
+        // Validar que todos los campos obligatorios estén presentes
         if (
             nombre_cientifico == null ||
             nombre_comun == null ||
@@ -92,7 +80,8 @@ export const plantasController = {
             efectos_secundarios == null ||
             tipos == null ||
             distribucion == null ||
-            preparaciones == null
+            preparaciones == null ||
+            password == null
         ) {
             return res
                 .status(400)
@@ -103,17 +92,17 @@ export const plantasController = {
                 );
         }
 
-        // parsear tipo, distribucion, preparaciones from JSON string to array
-        // const tiposArray = JSON.parse(tipos);
-        // const distribucionArray = JSON.parse(distribucion);
-        // const preparacionesArray = JSON.parse(preparaciones);
+        // Verificar la contraseña de administrador
+        if (password !== process.env.ADMIN_PASSWORD) {
+            return res.status(403).json(parseRespError("Acceso denegado"));
+        }
 
         try {
             const sqlInsertPlanta = `
                 INSERT INTO plantas
                 (nombre_cientifico, nombre_comun, descripcion, efectos_secundarios, imagen, usos, vistas)
                 VALUES (?, ?, ?, ?, ?, ?, 0)
-            `;
+            `; // Consulta SQL para insertar una nueva planta medicinal
             const buffer = convertBase64ToBuffer(imagen);
             const [result] = await conn.execute(sqlInsertPlanta, [
                 nombre_cientifico,
@@ -122,8 +111,9 @@ export const plantasController = {
                 efectos_secundarios,
                 buffer,
                 usos,
-            ]);
-            const plantaId = result.insertId;
+            ]); // Ejecuta la consulta de inserción
+            const plantaId = result.insertId; // Obtiene el ID de la planta recién creada
+            // Si la planta se creó correctamente, inserta las relaciones en las tablas intermedias
             if (plantaId) {
                 await insertRelacionesBatch(
                     conn,
@@ -131,9 +121,10 @@ export const plantasController = {
                     tipos,
                     distribucion,
                     preparaciones
-                );
+                ); // Inserta las relaciones en las tablas intermedias
             }
 
+            // Responde con un mensaje de éxito y el ID de la planta creada
             res.status(201).json(
                 parseRespOk(
                     { id: plantaId },
@@ -141,7 +132,7 @@ export const plantasController = {
                 )
             );
         } catch (error) {
-            console.error("Error al crear la planta medicinal:", error);
+            // Maneja errores y responde con un mensaje de error
             return res
                 .status(500)
                 .json(parseRespError("Error al agregar la planta medicinal"));
@@ -165,8 +156,8 @@ export const plantasController = {
         }
     },
     getImageById: async (req, res) => {
-        const { id } = req.params;
-        const sqlPlanta = "SELECT imagen FROM plantas WHERE id = ?";
+        const { id } = req.params; // Obtener el ID de la planta medicinal
+        const sqlPlanta = "SELECT imagen FROM plantas WHERE id = ?"; // Consulta SQL para obtener la imagen de la planta medicinal
         try {
             const [plantas] = await conn.execute(sqlPlanta, [id]);
             if (plantas.length === 0 || !plantas[0].imagen) {
@@ -189,8 +180,17 @@ export const plantasController = {
         }
     },
     deleteById: async (req, res) => {
-        const { id } = req.params;
-        const sqlDelete = "DELETE FROM plantas WHERE id = ?";
+        const { id } = req.params; // Obtener el ID de la planta medicinal a eliminar
+        const { password } = req.body; // Obtener la contraseña del cuerpo de la solicitud
+        // Verificar la contraseña de administrador
+        if (password !== process.env.ADMIN_PASSWORD) {
+            return res
+                .status(403)
+                .json(
+                    parseRespError("No tiene permiso para eliminar esta planta")
+                );
+        }
+        const sqlDelete = "DELETE FROM plantas WHERE id = ?"; // Consulta SQL para eliminar la planta medicinal
         try {
             const [result] = await conn.execute(sqlDelete, [id]);
             if (result.affectedRows === 0) {

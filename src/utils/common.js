@@ -1,5 +1,5 @@
 export const getInformacionAdicional = async (sqlQuery, conn, params = []) => {
-    // 1. OBTENER PLANTA BASE (incluye todos los campos como descripcion, usos, etc., gracias a SELECT *)
+    // Obtener la planta base (incluye todos los campos como descripcion, usos, etc., gracias a SELECT *)
     const [plantaBase] = await conn.execute(sqlQuery, params);
 
     if (plantaBase.length === 0) {
@@ -11,7 +11,7 @@ export const getInformacionAdicional = async (sqlQuery, conn, params = []) => {
     // Obtener el ID de la planta para las consultas de relación
     const plantaId = planta.id;
 
-    // 2. OBTENER PREPARACIONES
+    // Obtener las preparaciones, tipos y estados relacionados
     const sqlPreparaciones = `
         SELECT fp.id, fp.nombre, fp.descripcion, pp.parte_usada, pp.detalles
         FROM planta_preparacion pp
@@ -20,7 +20,6 @@ export const getInformacionAdicional = async (sqlQuery, conn, params = []) => {
     `;
     const [preparaciones] = await conn.execute(sqlPreparaciones, [plantaId]);
 
-    // 3. OBTENER TIPOS
     const sqlTipos = `
         SELECT t.id, t.nombre
         FROM planta_tipo pt
@@ -29,7 +28,6 @@ export const getInformacionAdicional = async (sqlQuery, conn, params = []) => {
     `;
     const [tipos] = await conn.execute(sqlTipos, [plantaId]);
 
-    // 4. OBTENER ESTADOS (Distribución)
     const sqlEstados = `
         SELECT e.id, e.nombre
         FROM planta_estado pe
@@ -38,31 +36,32 @@ export const getInformacionAdicional = async (sqlQuery, conn, params = []) => {
     `;
     const [estados] = await conn.execute(sqlEstados, [plantaId]);
 
-    // Calcular la URL de la imagen (manteniendo la lógica original)
+    // Calcular la URL de la imagen
     const imagenUrl = planta.imagen ? `/plantas/${plantaId}/imagen` : null;
 
     // Devolver la planta con todos los datos de relación
     return {
         // Devuelve todos los campos de la tabla 'plantas' (descripcion, usos, efectos, etc.)
         ...planta,
-        imagen: imagenUrl,
+        imagen: imagenUrl, // sobrescribe el campo imagen con la URL
         tipo: tipos,
-        distribucion: estados, // Usando el mismo nombre de clave que en getInformacionListado
+        distribucion: estados,
         preparaciones: preparaciones,
     };
 };
 
 export const getInformacionListado = async (conn, sqlQuery, params = []) => {
-    const [plantasBase] = await conn.execute(sqlQuery, params);
+    const [plantasBase] = await conn.execute(sqlQuery, params); // obtener plantas base
 
+    // Si no hay plantas, devolver array vacío
     if (plantasBase.length === 0) {
         return [];
     }
 
-    const plantaIds = plantasBase.map((pl) => pl.id);
-    const placeholders = plantaIds.map(() => "?").join(", "); // Genera ?, ?, ?
+    const plantaIds = plantasBase.map((pl) => pl.id); // extraer IDs de plantas
+    const placeholders = plantaIds.map(() => "?").join(", "); // Genera ?, ?, ? para la consulta SQL ejemplo IN (?, ?, ?)
 
-    // 2. OBTENER TODOS LOS TIPOS PARA TODAS LAS PLANTAS (2da consulta)
+    // Obtener todos los tipos para todas las plantas (2da consulta)
     const sqlTipos = `
         SELECT pt.id_planta, t.id, t.nombre
         FROM planta_tipo pt
@@ -71,7 +70,7 @@ export const getInformacionListado = async (conn, sqlQuery, params = []) => {
     `;
     const [tiposRelacion] = await conn.execute(sqlTipos, plantaIds);
 
-    // 3. OBTENER TODOS LOS ESTADOS PARA TODAS LAS PLANTAS (3ra consulta)
+    // Obtener todos los estados para todas las plantas (3ra consulta)
     const sqlEstados = `
         SELECT pe.id_planta, e.id, e.nombre
         FROM planta_estado pe
@@ -80,7 +79,7 @@ export const getInformacionListado = async (conn, sqlQuery, params = []) => {
     `;
     const [estadosRelacion] = await conn.execute(sqlEstados, plantaIds);
 
-    // --- Mapeo y Construcción de la Estructura JSON ---
+    // Mapeo y Construcción de la Estructura JSON
 
     // Crear mapas para acceso rápido (O(1)) a los datos de relación
     const tiposMap = {};
@@ -166,6 +165,7 @@ export const insertRelacionesBatch = async (
     }
 };
 
+// Convierte una cadena Base64 (posiblemente con prefijo data:) a un Buffer
 export const convertBase64ToBuffer = (base64String) => {
     let base64Data = base64String;
     // Si viene con el prefijo "data:image/jpeg;base64,..."
