@@ -141,7 +141,7 @@ export const plantasController = {
     getMostViewed: async (req, res) => {
         try {
             const sqlPlantas =
-                "SELECT id, nombre_comun, nombre_cientifico, vistas, imagen FROM plantas ORDER BY vistas DESC LIMIT 4";
+                "SELECT id, nombre_comun, nombre_cientifico, vistas, imagen FROM plantas ORDER BY vistas DESC LIMIT 3";
             const data = await getInformacionListado(conn, sqlPlantas);
             res.json(
                 parseRespOk(data, "Plantas más vistas obtenidas correctamente")
