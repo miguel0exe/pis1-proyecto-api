@@ -13,17 +13,24 @@ router.put("/:id/imagenes", (req, res) => {
     // Si viene con el prefijo "data:image/jpeg;base64,..."
     const buffer = convertBase64ToBuffer(base64Data);
 
-    const sql = `
+    try {
+        const sql = `
         UPDATE plantas
         SET imagen = ?
         WHERE id = ?;
     `;
-    // cast id a number
-    conn.execute(sql, [buffer, Number(id)]);
-    res.json({
-        status: true,
-        message: "Imagen actualizada correctamente",
-    });
+        // cast id a number
+        conn.execute(sql, [buffer, id]);
+        res.json({
+            status: true,
+            message: "Imagen actualizada correctamente",
+        });
+    } catch (error) {
+        console.error("Error al actualizar la imagen:", error);
+        return res
+            .status(500)
+            .json(parseRespError("Error al actualizar la imagen"));
+    }
 });
 
 // Definición de rutas para plantas medicinales usando el controlador plantasController
